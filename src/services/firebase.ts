@@ -64,7 +64,7 @@ export async function updateHabit(
   id: string,
   updates: Partial<Habit>,
 ): Promise<void> {
-  await updateDoc(doc(db, 'habits', id), updates as Record<string, unknown>);
+  await updateDoc(doc(db, 'habits', id), stripUndefined(updates) as Record<string, unknown>);
 }
 
 export async function deleteHabit(id: string): Promise<void> {

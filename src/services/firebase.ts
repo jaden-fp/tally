@@ -40,12 +40,19 @@ export async function getHabits(userId: string): Promise<Habit[]> {
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Habit));
 }
 
+function stripUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as Partial<T>;
+}
+
 export async function createHabit(habit: NewHabit): Promise<Habit> {
-  const ref = await addDoc(collection(db, 'habits'), {
+  const createdAt = new Date().toISOString();
+  const ref = await addDoc(collection(db, 'habits'), stripUndefined({
     ...habit,
-    createdAt: new Date().toISOString(),
-  });
-  return { id: ref.id, ...habit, createdAt: new Date().toISOString() };
+    createdAt,
+  }));
+  return { id: ref.id, ...habit, createdAt };
 }
 
 export async function updateHabit(

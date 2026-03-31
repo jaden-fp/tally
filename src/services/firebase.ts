@@ -11,7 +11,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
 } from 'firebase/firestore';
 import type { Habit, NewHabit, Entry } from '../types';
 
@@ -34,10 +33,16 @@ export async function getHabits(userId: string): Promise<Habit[]> {
   const q = query(
     collection(db, 'habits'),
     where('userId', '==', userId),
-    orderBy('order', 'asc'),
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Habit));
+  const habits = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Habit));
+  // Sort client-side by order (asc), then createdAt (asc) as fallback
+  return habits.sort((a, b) => {
+    if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+    if (a.order !== undefined) return -1;
+    if (b.order !== undefined) return 1;
+    return a.createdAt.localeCompare(b.createdAt);
+  });
 }
 
 function stripUndefined<T extends object>(obj: T): Partial<T> {

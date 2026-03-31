@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState, createElement } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -45,6 +45,36 @@ function resolveIcon(name: string | undefined): LucideIcon {
   return (LucideIcons[key] as LucideIcon | undefined) ?? (LucideIcons.Circle as LucideIcon);
 }
 
+// ---------------------------------------------------------------------------
+// Color helpers
+// ---------------------------------------------------------------------------
+
+function isValidHex(hex: string): boolean {
+  return /^#[0-9a-fA-F]{6}$/.test(hex);
+}
+
+// Native <input type="color"> rendered via React DOM on web — gives a full OS color wheel.
+const WebColorWheel =
+  Platform.OS === 'web'
+    ? ({ value, onChange }: { value: string; onChange: (v: string) => void }) =>
+        createElement('input', {
+          type: 'color',
+          value: isValidHex(value) ? value : '#5b9cf6',
+          onChange: (e: Event & { target: HTMLInputElement }) => onChange(e.target.value),
+          style: {
+            width: 44,
+            height: 44,
+            padding: 2,
+            border: '1.5px solid #e5e7eb',
+            borderRadius: 10,
+            cursor: 'pointer',
+            backgroundColor: 'white',
+          },
+        })
+    : null;
+
+// ---------------------------------------------------------------------------
+
 const FREQUENCY_OPTIONS = ['Daily', 'Weekly', 'Yearly'] as const;
 type Frequency = (typeof FREQUENCY_OPTIONS)[number];
 
@@ -82,7 +112,24 @@ export const HabitForm = memo(function HabitForm({
     return 'Daily';
   });
   const [target, setTarget] = useState(String(initialValues?.goalTarget ?? 1));
+  const [hexInput, setHexInput] = useState(initialValues?.color ?? DEFAULT_COLOR);
+  const [customExpanded, setCustomExpanded] = useState(false);
   const nameRef = useRef<TextInput>(null);
+
+  const isCustomColor = !PRESET_COLORS.some((c) => c.value === selectedColor);
+
+  const handleHexInput = useCallback((text: string) => {
+    const normalized = text.startsWith('#') ? text : `#${text}`;
+    setHexInput(normalized);
+    if (isValidHex(normalized)) {
+      setSelectedColor(normalized);
+    }
+  }, []);
+
+  const handleWheelChange = useCallback((value: string) => {
+    setSelectedColor(value);
+    setHexInput(value);
+  }, []);
 
   // Sync form fields when the modal opens (handles re-opening with different habits)
   useEffect(() => {
@@ -90,6 +137,8 @@ export const HabitForm = memo(function HabitForm({
       setName(initialValues?.name ?? '');
       setSelectedIcon(initialValues?.icon ?? DEFAULT_ICON);
       setSelectedColor(initialValues?.color ?? DEFAULT_COLOR);
+      setHexInput(initialValues?.color ?? DEFAULT_COLOR);
+      setCustomExpanded(false);
       setGoalEnabled(initialValues?.goalEnabled ?? false);
       setTarget(String(initialValues?.goalTarget ?? 1));
       if (initialValues?.goalFrequency === 'weekly') setFrequency('Weekly');
@@ -232,7 +281,11 @@ export const HabitForm = memo(function HabitForm({
                 return (
                   <Pressable
                     key={value}
-                    onPress={() => setSelectedColor(value)}
+                    onPress={() => {
+                      setSelectedColor(value);
+                      setHexInput(value);
+                      setCustomExpanded(false);
+                    }}
                     className="w-8 h-8 rounded-full items-center justify-center"
                     style={{
                       backgroundColor: value,
@@ -248,7 +301,50 @@ export const HabitForm = memo(function HabitForm({
                   </Pressable>
                 );
               })}
+
+              {/* Custom color swatch */}
+              <Pressable
+                onPress={() => setCustomExpanded((v) => !v)}
+                className="w-8 h-8 rounded-full items-center justify-center"
+                style={{
+                  backgroundColor: isCustomColor ? selectedColor : '#f3f4f6',
+                  borderWidth: 1.5,
+                  borderColor: isCustomColor ? selectedColor : '#d1d5db',
+                  transform: [{ scale: isCustomColor ? 1.1 : 1 }],
+                }}
+              >
+                {isCustomColor
+                  ? <LucideIcons.Check size={14} color="#fff" strokeWidth={3} />
+                  : <LucideIcons.Plus size={14} color="#6b7280" />
+                }
+              </Pressable>
             </View>
+
+            {/* Custom color input — hex + color wheel */}
+            {(customExpanded || isCustomColor) && (
+              <View className="mt-3 flex-row items-center gap-x-3">
+                {Platform.OS === 'web' && WebColorWheel && (
+                  <WebColorWheel value={selectedColor} onChange={handleWheelChange} />
+                )}
+                <View className="flex-1 flex-row items-center bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-200">
+                  <View
+                    className="w-5 h-5 rounded-full mr-2"
+                    style={{ backgroundColor: isValidHex(hexInput) ? hexInput : '#e5e7eb' }}
+                  />
+                  <TextInput
+                    value={hexInput}
+                    onChangeText={handleHexInput}
+                    placeholder="#000000"
+                    placeholderTextColor="#9ca3af"
+                    maxLength={7}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    className="flex-1 text-sm text-gray-900"
+                    style={{ fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}
+                  />
+                </View>
+              </View>
+            )}
           </FormSection>
 
           {/* Goal */}

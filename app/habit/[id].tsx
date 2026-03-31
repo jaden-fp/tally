@@ -28,6 +28,7 @@ import { MonthlyBarChart } from '../../src/components/MonthlyBarChart';
 import { WeeklyTrends } from '../../src/components/WeeklyTrends';
 import { CalendarEditor } from '../../src/components/CalendarEditor';
 import type { Habit } from '../../src/types';
+import { getTodayString } from '../../src/utils/dateHelpers';
 
 // ---------------------------------------------------------------------------
 // Constants / helpers
@@ -62,7 +63,7 @@ function toDateString(year: number, month: number, day: number): string {
 }
 
 function todayString(): string {
-  return new Date().toISOString().split('T')[0];
+  return getTodayString();
 }
 
 // ---------------------------------------------------------------------------

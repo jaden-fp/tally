@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import * as LucideIcons from 'lucide-react-native';
 import { useHabitStore } from '../store/habitStore';
+import { getTodayString } from '../utils/dateHelpers';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -65,10 +66,6 @@ function formatLabel(year: number, month: number, day: number): string {
   return `${SHORT_MONTH_NAMES[month]} ${day}, ${year}`;
 }
 
-function todayString(): string {
-  return new Date().toISOString().split('T')[0];
-}
-
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
@@ -79,7 +76,7 @@ export const CalendarEditor = memo(function CalendarEditor({
 }: CalendarEditorProps) {
   const { entries, loadEntriesForYear, setCount } = useHabitStore();
 
-  const today = todayString();
+  const today = getTodayString();
   const todayDate = new Date();
 
   const [viewYear, setViewYear] = useState(todayDate.getFullYear());

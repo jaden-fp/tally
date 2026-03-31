@@ -15,7 +15,7 @@ import {
 import * as LucideIcons from 'lucide-react-native';
 import { HABIT_ICONS, DEFAULT_ICON } from '../constants/icons';
 import { PRESET_COLORS, DEFAULT_COLOR } from '../constants/colors';
-import type { Habit, NewHabit } from '../types';
+import type { GoalFrequency, Habit, NewHabit } from '../types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -45,8 +45,20 @@ function resolveIcon(name: string | undefined): LucideIcon {
   return (LucideIcons[key] as LucideIcon | undefined) ?? (LucideIcons.Circle as LucideIcon);
 }
 
-const FREQUENCY_OPTIONS = ['Daily', 'Weekly'] as const;
+const FREQUENCY_OPTIONS = ['Daily', 'Weekly', 'Yearly'] as const;
 type Frequency = (typeof FREQUENCY_OPTIONS)[number];
+
+const FREQUENCY_MAP: Record<Frequency, GoalFrequency> = {
+  Daily: 'daily',
+  Weekly: 'weekly',
+  Yearly: 'yearly',
+};
+
+const FREQUENCY_LABEL: Record<Frequency, string> = {
+  Daily: 'per day',
+  Weekly: 'per week',
+  Yearly: 'per year',
+};
 
 // ---------------------------------------------------------------------------
 // HabitForm
@@ -64,7 +76,11 @@ export const HabitForm = memo(function HabitForm({
   const [selectedIcon, setSelectedIcon] = useState(initialValues?.icon ?? DEFAULT_ICON);
   const [selectedColor, setSelectedColor] = useState(initialValues?.color ?? DEFAULT_COLOR);
   const [goalEnabled, setGoalEnabled] = useState(initialValues?.goalEnabled ?? false);
-  const [frequency, setFrequency] = useState<Frequency>('Daily');
+  const [frequency, setFrequency] = useState<Frequency>(() => {
+    if (initialValues?.goalFrequency === 'weekly') return 'Weekly';
+    if (initialValues?.goalFrequency === 'yearly') return 'Yearly';
+    return 'Daily';
+  });
   const [target, setTarget] = useState(String(initialValues?.goalTarget ?? 1));
   const nameRef = useRef<TextInput>(null);
 
@@ -76,6 +92,9 @@ export const HabitForm = memo(function HabitForm({
       setSelectedColor(initialValues?.color ?? DEFAULT_COLOR);
       setGoalEnabled(initialValues?.goalEnabled ?? false);
       setTarget(String(initialValues?.goalTarget ?? 1));
+      if (initialValues?.goalFrequency === 'weekly') setFrequency('Weekly');
+      else if (initialValues?.goalFrequency === 'yearly') setFrequency('Yearly');
+      else setFrequency('Daily');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -92,6 +111,7 @@ export const HabitForm = memo(function HabitForm({
       icon: selectedIcon,
       color: selectedColor,
       goalEnabled,
+      goalFrequency: goalEnabled ? FREQUENCY_MAP[frequency] : undefined,
       goalTarget: goalEnabled ? parseInt(target, 10) || 1 : undefined,
       userId: initialValues?.userId ?? '',
       order: initialValues?.order,
@@ -271,7 +291,7 @@ export const HabitForm = memo(function HabitForm({
                 {/* Target count */}
                 <View className="flex-row items-center bg-gray-50 rounded-xl px-4 py-3">
                   <Text className="flex-1 text-sm text-gray-700">
-                    Target ({frequency === 'Daily' ? 'per day' : 'per week'})
+                    Target ({FREQUENCY_LABEL[frequency]})
                   </Text>
                   <TextInput
                     value={target}

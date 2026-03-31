@@ -1,3 +1,5 @@
+export type GoalFrequency = 'daily' | 'weekly' | 'yearly';
+
 export interface Habit {
   id: string;
   name: string;
@@ -5,7 +7,8 @@ export interface Habit {
   color?: string;
   icon?: string;
   goalEnabled: boolean;
-  goalTarget?: number; // target count per day
+  goalFrequency?: GoalFrequency;
+  goalTarget?: number; // target count per day/week/year depending on goalFrequency
   userId: string;
   createdAt: string; // ISO date string
   order?: number;

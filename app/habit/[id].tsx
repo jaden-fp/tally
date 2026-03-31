@@ -201,6 +201,18 @@ export default function HabitDetailScreen() {
           )}
         </Section>
 
+        {/* ── Section: Yearly goal progress ── */}
+        {!entriesLoading && habit.goalEnabled && habit.goalFrequency === 'yearly' && habit.goalTarget && (
+          <Section>
+            <YearlyGoalProgress
+              yearTotal={yearTotal}
+              goalTarget={habit.goalTarget}
+              year={viewYear}
+              color={color}
+            />
+          </Section>
+        )}
+
         {/* ── Section: Monthly drill-down ── */}
         {!entriesLoading && (
           <MonthDrillDown
@@ -461,6 +473,94 @@ const StreakCard = memo(function StreakCard({
         {value}
       </Text>
       <Text className="text-xs text-gray-400 mt-0.5">{unit}</Text>
+    </View>
+  );
+});
+
+// ---------------------------------------------------------------------------
+// YearlyGoalProgress
+// ---------------------------------------------------------------------------
+
+interface YearlyGoalProgressProps {
+  yearTotal: number;
+  goalTarget: number;
+  year: number;
+  color: string;
+}
+
+const YearlyGoalProgress = memo(function YearlyGoalProgress({
+  yearTotal,
+  goalTarget,
+  year,
+  color,
+}: YearlyGoalProgressProps) {
+  const progress = Math.min(yearTotal / goalTarget, 1);
+  const pct = Math.round(progress * 100);
+  const remaining = Math.max(goalTarget - yearTotal, 0);
+  const isComplete = yearTotal >= goalTarget;
+
+  // Project pace based on day-of-year
+  const now = new Date();
+  const isCurrentYear = now.getFullYear() === year;
+  const dayOfYear = isCurrentYear
+    ? Math.floor((now.getTime() - new Date(year, 0, 0).getTime()) / 86_400_000)
+    : 365;
+  const daysInYear = year % 4 === 0 ? 366 : 365;
+  const projectedTotal = dayOfYear > 0
+    ? Math.round((yearTotal / dayOfYear) * daysInYear)
+    : 0;
+
+  return (
+    <View>
+      {/* Header row */}
+      <View className="flex-row items-baseline justify-between mb-3">
+        <Text className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          Yearly Goal
+        </Text>
+        <Text className="text-xs font-medium" style={{ color: isComplete ? color : '#6b7280' }}>
+          {isComplete ? '✓ Complete' : `${remaining} to go`}
+        </Text>
+      </View>
+
+      {/* Big numbers */}
+      <View className="flex-row items-baseline gap-x-1 mb-3">
+        <Text className="text-3xl font-bold" style={{ color }}>
+          {yearTotal}
+        </Text>
+        <Text className="text-base text-gray-400">/ {goalTarget}</Text>
+        <Text className="text-base font-semibold text-gray-500 ml-1">{pct}%</Text>
+      </View>
+
+      {/* Progress bar */}
+      <View
+        className="w-full rounded-full overflow-hidden"
+        style={{ height: 8, backgroundColor: `${color}22` }}
+      >
+        <Animated.View
+          style={{
+            height: 8,
+            width: `${pct}%`,
+            backgroundColor: color,
+            borderRadius: 999,
+          }}
+        />
+      </View>
+
+      {/* Pace row */}
+      {isCurrentYear && yearTotal > 0 && (
+        <View className="flex-row justify-between mt-3">
+          <Text className="text-xs text-gray-400">
+            On pace for{' '}
+            <Text className="font-semibold text-gray-600">{projectedTotal}</Text>
+            {' '}this year
+          </Text>
+          {projectedTotal >= goalTarget ? (
+            <Text className="text-xs font-medium" style={{ color }}>On track ↑</Text>
+          ) : (
+            <Text className="text-xs text-gray-400">Behind pace</Text>
+          )}
+        </View>
+      )}
     </View>
   );
 });
